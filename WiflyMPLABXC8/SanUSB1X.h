@@ -1,17 +1,16 @@
 #ifndef SANUSB_H
 #define SANUSB_H
-
+#define _XTAL_FREQ  4000000
+//Testado nas versões 1.31 e 1.38 do XC8, bem como nas IDEs MPLABX 2 e 3.
+#include <xc.h>
 #include<p18f4550.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <delays.h>
-#include <adc.h>
-#include <usart.h>
+//#include <plib/delays.h>
+//#include <plib/adc.h>
+//#include <plib/usart.h>
 #include <string.h>
 
-
 //void interrupcao(void);
-
 
 // Declaração externa para funções assembly -------
 //extern void tempo_us(unsigned char);
@@ -313,18 +312,16 @@ switch(pino){
                         }
                                                          }
 void tempo_us (unsigned int i)
-{ unsigned int k;  
-
-for(k=0;k<i;k++) {  Delay1TCY();} //12*i para 48 MHz
-
+{
+    unsigned int k;
+    for(k=0;k<i;k++) {  __delay_us(1);}
 }
 
 void tempo_ms (unsigned int i)
-{ unsigned int k; 
-EEADR =REG+0B11111100+tmp;
-EECON1=REG+EEADR & 0B00001011;
-while(EEDATA);
-for(k=0;k<i;k++) {  Delay1KTCYx(1);} //12*i para 48 MHz
+{
+    unsigned int k;
+for(k=0;k<i;k++) {  __delay_ms(1);} //12*i para 48 MHz
+
 }
 
 #define AN0             0x0E
@@ -386,31 +383,36 @@ void multiplica_timer16bits(char timer,unsigned int multiplica) { //Timer 0,1 ou
 switch(timer){
     case 0:             //T0CON = TMR0ON , T08BIT(0=16bits, 1=8bits), T0CS , T0SE , PSA , T0PS2 T0PS1 T0PS0
       switch(multiplica){ //Default 16 bits T08BIT=1
-            case 256: T0CON =0B10000111; break;
-            case 128: T0CON =0B10000110; break;
-            case 64:  T0CON =0B10000101; break;
-            case 32:  T0CON =0B10000100; break;
-            case 16:  T0CON =0B10000011; break;
-            case 8:   T0CON =0B10000010; break;
-            case 4:   T0CON =0B10000001; break;
-            case 2:   T0CON =0B10000000; break;
-                  } break;
- /* case 1:
-      switch(multiplica){ T1CON = 0x80;      // TimerOn Modo 16-bits
-            case 8:  T1CON =0B10110001; break;
-            case 4:  T1CON =0B10100001; break;
-            case 2:  T1CON =0B10010001; break;
-            case 1:  T1CON =0B10000001; break;
+            case 256: T0CON =0B10000111; 
+            case 128: T0CON =0B10000110;
+            case 64:  T0CON =0B10000101; 
+            case 32:  T0CON =0B10000100; 
+            case 16:  T0CON =0B10000011; 
+            case 8:   T0CON =0B10000010; 
+            case 4:   T0CON =0B10000001; 
+            case 2:   T0CON =0B10000000;
+            default:   T0CON =0B10000000;
+                  } 
+ //*
+  case 1:
+      switch(multiplica){      // TimerOn Modo 16-bits
+            case 8:  T1CON =0B10110001; 
+            case 4:  T1CON =0B10100001; 
+            case 2:  T1CON =0B10010001; 
+            case 1:  T1CON =0B10000001;
+            default: T1CON = 0x80;
                   } break;
    case 3:
-      switch(multiplica){ T3CON = 0x80;      // modo 16-bits
-            case 8:  T3CON =0B10110001; break;
-            case 4:  T3CON =0B10100001; break;
-            case 2:  T3CON =0B10010001; break;
-            case 1:  T3CON =0B10000001; break;
-                  } break;
-                                  */ }
-                                    }
+      switch(multiplica){       // modo 16-bits
+            case 8:  T3CON =0B10110001; 
+            case 4:  T3CON =0B10100001; 
+            case 2:  T3CON =0B10010001; 
+            case 1:  T3CON =0B10000001;
+            default: T3CON = 0x80;
+                  } 
+                                  //*/
+          }
+                                                                }
 void tempo_timer16bits(char timer,unsigned int conta_us) {
 unsigned int carga=65536-conta_us;
 unsigned int TMRH =(carga/256);
@@ -460,19 +462,21 @@ return EEDATA;
 
 void clock_int_4MHz(void)
 {
- #asm
- MOVLW 0b11111101
- MOVWF EEADR, 0
- bcf EECON1,7,0
- bcf EECON1,6,0
- bsf EECON1,0,0
- BLEIBEN:
- BTFSC 0x0FA8,0,0
- goto BLEIBEN
-#endasm
+// #asm
+ asm("MOVLW 0b11111101"); //MOVLW 0b11111101
+ //asm("MOVWF EEADR,0");  //MOVWF EEADR,0
+ asm("MOVWF EEADR");    //MOVWF EEADR
+ asm("bcf EECON1,7,0"); //bcf EECON1,7,0
+ asm("bcf EECON1,6,0"); //bcf EECON1,6,0
+ asm("bsf EECON1,0,0"); //bsf EECON1,0,0
+ asm("BLEIBEN:");       //BLEIBEN:
+ asm("BTFSC 0x0FA8,0,0");//BTFSC 0x0FA8,0,0
+ asm("goto BLEIBEN");   //goto BLEIBEN
+
+//#endasm
 OSCCON=0B01100110;
 while(!OSCCONbits.IOFS);
-#define _XTAL_FREQ  4000000
+
 EEADR = 0B11111101;
 EECON1=EEADR & 0B00001011;
 while(EEDATA);
